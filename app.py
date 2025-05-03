@@ -1,41 +1,33 @@
-from huggingface_hub import InferenceClient
 import streamlit as st
+from huggingface_hub import InferenceClient
 
+# Initialize InferenceClient 
 client = InferenceClient(
     provider="cohere",
-  api_key= st.secrets["hf_token"],
+    api_key=st.secrets["hf_token"],  
 )
 
-# Define the initial system prompt
-system_prompt = """أنت مساعد دردشة لمتجر إلكتروني خليجي. تحدث بلغة عربية بسيطة وبأسلوب إماراتي ودود، وساعد المستخدم بسرعة ووضوح.
-"""
+# Define the system prompt for the chatbot
+system_prompt = """أنت مساعد دردشة لمتجر إلكتروني خليجي. تحدث بلغة عربية بسيطة وبأسلوب إماراتي ودود، وساعد المستخدم بسرعة ووضوح."""
+ 
+# Function to generate a response based on user input
+def get_chat_response(user_input):
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_input},
+    ]
+    completion = client.chat.completions.create(
+        model="CohereLabs/c4ai-command-r7b-arabic-02-2025",
+        messages=messages,
+        max_tokens=512,
+    )
+    return completion.choices[0].message.content
 
-# Initialize the chat history
-messages = [
-    {"role": "system", "content": system_prompt},
-    {"role": "user", "content": "سلام"}  # The first user query
-]
+# Streamlit interface
+st.title("Gulf chatbot demo")  
 
-# Make the API call with the chat history
-completion = client.chat.completions.create(
-    model="CohereLabs/c4ai-command-r7b-arabic-02-2025",
-    messages=messages,
-    max_tokens=512,
-)
+user_input = st.text_input("أهلاً! كيف يمكنني مساعدتك؟")
 
-# Print the assistant's response
-print(completion.choices[0].message)
-
-# Example of continuing the conversation with new user input
-messages.append({"role": "assistant", "content": completion.choices[0].message.content})  # Adding ONLY the content to history
-messages.append({"role": "user", "content": "طلبي وايد تاخر"})  # New user query
-
-# Make another API call to continue the conversation
-completion = client.chat.completions.create(
-    model="CohereLabs/c4ai-command-r7b-arabic-02-2025",
-    messages=messages,
-    max_tokens=512,
-)
-
-# Print the new assistant response
-print(completion.choices[0].message)
+if user_input:
+    response = get_chat_response(user_input)
+    st.write(response)
